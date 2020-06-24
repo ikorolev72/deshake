@@ -1,0 +1,17 @@
+{
+  "general": {    
+    "ffmpeg": "ffmpeg",
+    "ffprobe": "ffprobe",
+    "ffmpegLogLevel": "info",
+    "tmpDir": "tmp",  
+    "outputDir": "./output" ,
+    "logDir" : "./log",
+    "overwrite" : true,
+    "prefix" : "processed_"
+  },
+  "filters": {
+    "step1" : "vidstabdetect=stepsize=15:shakiness=10:accuracy=10:result=transform_vectors.trf -f null - "
+    ,
+    "step2": "vidstabtransform=input=transform_vectors.trf:zoom=0:smoothing=30,unsharp=5:5:0.8:3:3:0.4,scale=1920:-1 -vcodec libx264 -tune film -an "
+  }
+ }
