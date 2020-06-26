@@ -19,15 +19,9 @@ class processing:
         self.tmpDir = config['general']['tmpDir']
         self.ffmpeg = config['general']['ffmpeg']
         self.ffprobe = config['general']['ffprobe']
-        self.youtube_dl = config['general']['youtube-dl']
         # ffmpeg log level ( error, warning, info, debug, etc)
         self.logLevel = config['general']['ffmpegLogLevel']
 
-        self.watermarkFile = config['video']['watermarkFile']
-        self.watermarkPosition = config['video']['watermarkPosition']
-        self.width = str(config['video']['width'])
-        self.height = str(config['video']['height'])
-        self.moveMaskWidthPercent= str(config['video']['moveMaskWidthPercent'])
 
     def get_script_path(self):
         return os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -41,13 +35,31 @@ class processing:
 
     def getAudioDuration(self, file):
         try:
-            cmd = self.ffprobe + ' -v quiet -of csv=p=0 -show_entries format=duration ' + file
+            cmd = self.ffprobe + ' -v quiet -of csv=p=0 -show_entries format=duration -select_streams a:0' + file
             if os.path.isfile(file):
                 info = subprocess.getoutput(cmd)
                 if not info:
                     self.writeLog(
                         "Error: Cannot get audio stream info for file "+file)
                     return 0
+            else:
+                info=0
+            # if file do not exists
+            return info
+        except:
+            return 0
+
+    def getVideoDuration(self, file):
+        try:
+            cmd = self.ffprobe + ' -v quiet -of csv=p=0 -show_entries format=duration -select_streams v:0 ' + file
+            if os.path.isfile(file):
+                info = subprocess.getoutput(cmd)
+                if not info:
+                    self.writeLog(
+                        "Error: Cannot get video stream info for file "+file)
+                    return 0
+            else:
+                info=0
             # if file do not exists
             return info
         except:

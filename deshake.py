@@ -21,19 +21,18 @@ baseDir = os.path.dirname(os.path.realpath(__file__))
 # parse command line options
 # Instantiate the parser
 parser = argparse.ArgumentParser(
-    description='Upload your video file to youtube')
+    description='Deshake input video file')
 parser.add_argument('-c', '--config', required=False,
                     help='Path to config file')
 
 parser.add_argument('-v', '--version', action='version',
                     version='%(prog)s '+version)
-
-parser.add_argument('-d', '--dir', required=False,
-                    help='Processing all files in this directory')
-parser.add_argument('-f', '--file', required=False,
-                    help='Processing this file')
-parser.add_argument('-o', '--overwrite', required=False,
-                    help='Processing this file')                    
+parser.add_argument('-i', '--input', required=False,
+                    help='Input video file')
+parser.add_argument('-o', '--output', required=False,
+                    help='Output video file')
+parser.add_argument('-w', '--overwrite', required=False, action='store_const', const=True, 
+                    help='Overwrite input file')
 
 args = parser.parse_args()
 configFile = args.config
@@ -54,115 +53,66 @@ except IOError:
 
 logFile = baseDir+"/log/processing.log"
 processing = processing(config, logFile)
+errors = 0
+
+if not args.input and not os.environ.get(config['general']['inputVariable']):
+    processing.writeLog(
+        ("Error: Do not get parameter '--input' and do not set environment variable " + config['general']['inputVariable']))
+    errors = +1
+    # sys.exit(1)
+
+if not args.overwrite and not args.output and not os.environ.get(config['general']['outputVariable']):
+    processing.writeLog(
+        ("Error: Do not get  parameter '--output' and do not set environment variable " + config['general']['outputVariable']))
+    errors = +1
+    # sys.exit(1)
+
+if errors > 0:
+    sys.exit(1)
 
 
 def main():
     filesForRemove = []
     processing.writeLog("Info: Script started")
-    try:
-"""       
-        with open(csvDataFile, newline='') as csvfile:
-            reader = csv.DictReader(
-                csvfile, delimiter=',', fieldnames=None, restkey='unknown')
-            for line in reader:
-                #print( line )
-                processing.writeLog(
-                    "Info: Start processing for line "+line['id'])
-                # get youtube video_id
-                tmpFile = processing.getTmpFileName('tmp')
-                filesForRemove.append(tmpFile)
-                cmd = processing.getVideoId(line['link'], tmpFile)
-                processing.writeLog(
-                    "Info: Prepared command:" + cmd)
-                try:
-                    if not processing.doExec(cmd):
-                        processing.writeLog(
-                            "Error: Cannot get videoId for url:" + line['link'])
-                        continue
-                except:
-                    processing.writeLog(
-                        "Error: Cannot get videoId for url:" + line['link'])
-                    continue
 
-                f = open(tmpFile, "r")
-                if f:
-                    videoId = f.read().rstrip()
-                    f.close()
-                    processing.writeLog(
-                        "Info: VideoId :" + videoId)
-                else:
-                    processing.writeLog(
-                        "Error: Cannot read videoId from file :" + tmpFile)
-                    continue
+    if os.environ.get(config['general']['inputVariable']):
+        inputFile = os.environ.get(config['general']['inputVariable'])
+    if args.input:
+        inputFile = args.input
 
-                if not videoId:
-                    processing.writeLog(
-                        "Error: Cannot get videoId for url:" + line['link'])
-                    continue
+    if os.environ.get(config['general']['outputVariable']):
+        outputFile = os.environ.get(config['general']['outputFile'])
+    if args.output:
+        outputFile = args.output
+    if args.overwrite:
+        outputFile = inputFile
 
-                # download youtube video
-                tmpFile = processing.getTmpFileName('tmp')
-                filesForRemove.append(tmpFile)
-
-                cmd = processing.downloadFile(line['link'], tmpFile)
-                processing.writeLog(
-                    "Info: Prepared command:" + cmd)
-                try:
-                    if not processing.doExec(cmd):
-                        processing.writeLog(
-                            "Error: Cannot download video for url:" + line['link'])
-                        continue
-                except:
-                    processing.writeLog(
-                        "Error: Cannot download video for url:" + line['link'])
-                    continue
-"""                
-                # check extenson for downloaded video
-                for extension in ['.mkv', '.mp4', '.webm', '.ogg', '.flv']:
-                    file = tmpFile+extension
-                    if os.path.isfile(file):
-                        processing.writeLog(
-                            "Info: url:" + line['link'] + " downloaded to file: "+file)
-                        break
-
-                if not os.path.isfile(file):
-                    processing.writeLog(
-                        "Error: Cannot download file for url:" + line['link'])
-                    continue
-
-                filesForRemove.append(file)
-                # prepare ffmpeg command
-                outputFile = config['general']['outputDir'] + \
-                    '/' + videoId + '.mp4'
-                cmd = processing.ffmpegPrepareCommand(file, line, outputFile)
-
-                processing.writeLog(
-                    "Info: Prepared command:" + cmd)
-                try:
-                    if not processing.doExec(cmd):
-                        processing.writeLog(
-                            "Error: Cannot execute ffmpeg command")
-                        continue
-                except:
-                    processing.writeLog(
-                        "Error: Cannot execute ffmpeg command")
-                    continue
-
-                processing.writeLog(
-                    "Info: Video was processed : "+outputFile)
-
-    except IOError:
-        print(("Error: Cannot read csv file: "+csvDataFile))
-        processing.writeLog("Info: Script finished")
-        processing.removeTmpFiles(filesForRemove)
+    if not os.path.isfile(inputFile):
+        processing.writeLog(
+            "Error: input file '"+str(inputFile)+"'for processing do nto exists")
         sys.exit(1)
+
+    if processing.getVideoDuration(inputFile) == 0:
+        processing.writeLog(
+            "Error: Cannot get duration of input video file. Something wrong")
+        sys.exit(1)
+
+    tmpFile = processing.getTmpFileName('mp4')
+    filesForRemove.append(tmpFile)
+    # prepare ffmpeg command
+    outputFile = config['general']['outputDir'] + \
+        '/' + videoId + '.mp4'
+    cmd = processing.ffmpegPrepareCommand(inputFile, tmpFile, outputFile)
+
+    # except IOError:
+    #    print(("Error: Cannot read csv file: "+csvDataFile))
+    #    processing.writeLog("Info: Script finished")
+    #    processing.removeTmpFiles(filesForRemove)
+    #    sys.exit(1)
 
     processing.writeLog("Info: Script finished")
     processing.removeTmpFiles(filesForRemove)
     sys.exit(0)
-
-
-
 
 
 if __name__ == '__main__':
