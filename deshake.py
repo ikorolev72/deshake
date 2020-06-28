@@ -55,13 +55,13 @@ logFile = baseDir+"/log/processing.log"
 processing = processing(config, logFile)
 errors = 0
 
-if not args.input and not os.environ.get(config['general']['inputVariable']):
+if  args.input is None and not os.environ.get(config['general']['inputVariable']):
     processing.writeLog(
         ("Error: Do not get parameter '--input' and do not set environment variable " + config['general']['inputVariable']))
     errors = +1
     # sys.exit(1)
 
-if not args.overwrite and not args.output and not os.environ.get(config['general']['outputVariable']):
+if  not args.overwrite and  args.output is None and not os.environ.get(config['general']['outputVariable']):
     processing.writeLog(
         ("Error: Do not get  parameter '--output' and do not set environment variable " + config['general']['outputVariable']))
     errors = +1
@@ -97,12 +97,35 @@ def main():
             "Error: Cannot get duration of input video file. Something wrong")
         sys.exit(1)
 
-    tmpFile = processing.getTmpFileName('mp4')
+    tmpFile = processing.getTmpFileName('.mp4')
+
     filesForRemove.append(tmpFile)
     # prepare ffmpeg command
-    outputFile = config['general']['outputDir'] + \
-        '/' + videoId + '.mp4'
-    cmd = processing.ffmpegPrepareCommand(inputFile, tmpFile, outputFile)
+    commands = processing.ffmpegPrepareCommand(inputFile, tmpFile )
+
+    for cmd in commands :
+        processing.writeLog(
+                    "Info: Prepared command:" + cmd)
+        try:
+            if not processing.doExec(cmd):
+                processing.writeLog(
+                    "Error: Fatal. Cannot execute ffmpeg command")
+                processing.removeTmpFiles(filesForRemove)
+                sys.exit(1)
+                
+        except:
+            processing.writeLog(
+                "Error: Fatal. Cannot execute ffmpeg command")
+            processing.removeTmpFiles(filesForRemove)
+            sys.exit(1)
+
+    try:
+        os.rename(tmpFile, outputFile)      
+    except:
+        processing.writeLog(
+                "Error: Cannot rename file "+tmpFile+" to "+ outputFile)                
+        sys.exit(1)
+
 
     # except IOError:
     #    print(("Error: Cannot read csv file: "+csvDataFile))

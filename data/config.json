@@ -9,8 +9,8 @@
     "outputVariable": "OutName",
     "backup": true
   },
-  "filters": {
-    "step1": "vidstabdetect=stepsize=15:shakiness=10:accuracy=10:result=transform_vectors.trf -f null - ",
-    "step2": "vidstabtransform=input=transform_vectors.trf:zoom=0:smoothing=30,unsharp=5:5:0.8:3:3:0.4,scale=1920:-1 -vcodec libx264 -tune film -an "
+  "commands": {
+    "step1": "%(ffmpeg)s -y -i \"%(input)s\" -vf vidstabdetect=stepsize=15:shakiness=10:accuracy=10:result=%(vectors)s -f null - ",
+    "step2": "%(ffmpeg)s -y -i \"%(input)s\" -vf vidstabtransform=input=%(vectors)s:zoom=0:smoothing=30,unsharp=5:5:0.8:3:3:0.4,scale=1920:-1 -vcodec libx264 -tune film -an %(output)s "
   }
 }
