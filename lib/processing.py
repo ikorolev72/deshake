@@ -10,19 +10,21 @@ import time
 import zlib
 import unicodedata
 import hashlib
+import glob
 
 
 class processing:
-    def __init__(self, config, logFile):
+    def __init__(self, config, logFile, tmpDir ):
         self.config = config
         self.logFile = logFile
-        self.tmpDir = config['general']['tmpDir']
+        self.tmpDir = tmpDir
         self.ffmpeg = config['general']['ffmpeg']
         self.ffprobe = config['general']['ffprobe']
         # ffmpeg log level ( error, warning, info, debug, etc)
         self.logLevel = config['general']['ffmpegLogLevel']
         self.step1 = config['commands']['step1']
-        self.step2 = config['commands']['step2']        
+        self.step2 = config['commands']['step2']
+        self.filesForRemove=[]
 
     def get_script_path(self):
         return os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -32,11 +34,13 @@ class processing:
         os.makedirs(self.tmpDir, exist_ok=True)
         fileName = "{0}/{1}{2}{3}".format(self.tmpDir,
                                           time.time(), randint(10000, 99999), suffix)
+        self.filesForRemove.append(fileName)
         return(fileName)
 
     def getAudioDuration(self, file):
         try:
-            cmd = self.ffprobe + ' -v quiet -of csv=p=0 -show_entries format=duration -select_streams a:0' + file
+            cmd = self.ffprobe + \
+                ' -v quiet -of csv=p=0 -show_entries format=duration -select_streams a:0' + file
             if os.path.isfile(file):
                 info = subprocess.getoutput(cmd)
                 if not info:
@@ -44,7 +48,7 @@ class processing:
                         "Error: Cannot get audio stream info for file "+file)
                     return 0
             else:
-                info=0
+                info = 0
             # if file do not exists
             return info
         except:
@@ -52,7 +56,8 @@ class processing:
 
     def getVideoDuration(self, file):
         try:
-            cmd = self.ffprobe + ' -v quiet -of csv=p=0 -show_entries format=duration -select_streams v:0 ' + file
+            cmd = self.ffprobe + \
+                ' -v quiet -of csv=p=0 -show_entries format=duration -select_streams v:0 ' + file
             if os.path.isfile(file):
                 info = subprocess.getoutput(cmd)
                 if not info:
@@ -60,7 +65,7 @@ class processing:
                         "Error: Cannot get video stream info for file "+file)
                     return 0
             else:
-                info=0
+                info = 0
             # if file do not exists
             return info
         except:
@@ -83,10 +88,12 @@ class processing:
             print("Warning: cannot append to log file:"+self.logFile)
 
     def ffmpegPrepareCommand(self, inputFile, outputFile):
-        vectors=self.getTmpFileName(".trf")
-        command1 = self.step1 % {'ffmpeg': self.ffmpeg, 'input': inputFile, 'vectors': vectors }
-        command2 = self.step2 % {'ffmpeg': self.ffmpeg, 'input': inputFile, 'vectors': vectors, 'output':outputFile }
-        commands=[]
+        vectors = self.getTmpFileName(".trf")
+        command1 = self.step1 % {'ffmpeg': self.ffmpeg,
+                                 'input': os.path.abspath( inputFile), 'vectors':  vectors, 'loglevel': self.logLevel}
+        command2 = self.step2 % {
+            'ffmpeg': self.ffmpeg, 'input': os.path.abspath( inputFile), 'vectors': vectors, 'output': os.path.abspath( outputFile) , 'loglevel': self.logLevel}
+        commands = []
         commands.append(command1)
         commands.append(command2)
 
@@ -103,10 +110,8 @@ class processing:
             return True
         return False
 
-
-
-    def removeTmpFiles(self, filesForRemove):
-        for file in filesForRemove:
+    def removeTmpFiles(self):
+        for file in self.filesForRemove:
             if os.path.exists(file):
                 os.remove(file)
                 self.writeLog("Temp file "+file + " was removed")
@@ -127,3 +132,13 @@ class processing:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
         return hash_md5.hexdigest()
+
+    def scanDirectory(self, directoryPath, extensions):
+        filelist = []
+        filenames = glob.glob(directoryPath+"/*")
+        # for folder, subfolders, filenames in os.walk(directoryPath):
+        for ext in extensions:
+            for filename in filenames:
+                if filename.lower().endswith(ext):
+                    filelist.append(filename)                   
+        return filelist

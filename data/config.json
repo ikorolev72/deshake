@@ -2,15 +2,36 @@
   "general": {
     "ffmpeg": "ffmpeg",
     "ffprobe": "ffprobe",
-    "ffmpegLogLevel": "info",
+    "ffmpegLogLevel": "warning",
     "tmpDir": "tmp",
-    "prefix": "processed_",
     "inputVariable": "File_Name",
     "outputVariable": "OutName",
-    "backup": true
+    "backup": true,
+    "extensions": [
+      ".avi",
+      ".mkv",
+      ".mov",
+      ".mp4",
+      ".flv",
+      ".m2ts",
+      ".mts",
+      ".wmv",
+      ".asf",
+      ".amv",
+      ".m4p",
+      ".mpg",
+      ".mp2",
+      ".mpeg",
+      ".mpe",
+      ".mpv",
+      ".m2v",
+      ".m4v",
+      ".svi",
+      ".3gp"
+    ]
   },
   "commands": {
-    "step1": "%(ffmpeg)s -y -i \"%(input)s\" -vf vidstabdetect=stepsize=15:shakiness=10:accuracy=10:result=%(vectors)s -f null - ",
-    "step2": "%(ffmpeg)s -y -i \"%(input)s\" -vf vidstabtransform=input=%(vectors)s:zoom=0:smoothing=30,unsharp=5:5:0.8:3:3:0.4,scale=1920:-1 -vcodec libx264 -tune film -an %(output)s "
+    "step1": "%(ffmpeg)s -y -i \"%(input)s\" -loglevel %(loglevel)s -vf vidstabdetect=stepsize=15:shakiness=10:accuracy=10:result=\"%(vectors)s\" -f null - ",
+    "step2": "%(ffmpeg)s -y -i \"%(input)s\" -loglevel %(loglevel)s -vf vidstabtransform=input=\"%(vectors)s\":zoom=0:smoothing=30,unsharp=5:5:0.8:3:3:0.4,scale=1920:-1 -vcodec libx264 -tune film -an \"%(output)s\" "
   }
 }
