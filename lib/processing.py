@@ -40,7 +40,7 @@ class processing:
     def getAudioDuration(self, file):
         try:
             cmd = self.ffprobe + \
-                ' -v quiet -of csv=p=0 -show_entries format=duration -select_streams a:0' + file
+                ' -v quiet -of csv=p=0 -show_entries format=duration -select_streams a:0 "' + file + '"'
             if os.path.isfile(file):
                 info = subprocess.getoutput(cmd)
                 if not info:
@@ -57,7 +57,7 @@ class processing:
     def getVideoDuration(self, file):
         try:
             cmd = self.ffprobe + \
-                ' -v quiet -of csv=p=0 -show_entries format=duration -select_streams v:0 ' + file
+                ' -v quiet -of csv=p=0 -show_entries format=duration -select_streams v:0 "' + file + '"'
             if os.path.isfile(file):
                 info = subprocess.getoutput(cmd)
                 if not info:

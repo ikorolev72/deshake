@@ -7,9 +7,13 @@ This script `deshake` - remove camera shake from hand-holding a camera in video 
   + input files can be backuped. This option can be defined in `config` file
 
 ## Version
-#### Version 1.0 20200630
+#### Version 1.1 20200703
 
 ## What's new
+  Version 1.1 20200703
+
+  + Fixed error with spaces in filenames
+
 
   Version 1.0 20200630
 
